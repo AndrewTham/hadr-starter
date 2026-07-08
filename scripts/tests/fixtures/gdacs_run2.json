@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-68.25, 10.52] },
+      "properties": {
+        "eventtype": "EQ", "eventid": 100, "episodeid": 205, "glide": "",
+        "name": "Earthquake in Venezuela",
+        "htmldescription": "Orange M 7.5 Earthquake in Venezuela.",
+        "alertlevel": "Orange", "alertscore": 1.6,
+        "iscurrent": "true", "country": "Venezuela",
+        "fromdate": "2026-07-07T09:12:30", "todate": "2026-07-07T09:12:30",
+        "datemodified": "2026-07-07T23:00:00", "iso3": "VEN", "source": "NEIC"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [122.0, 14.5] },
+      "properties": {
+        "eventtype": "TC", "eventid": 300, "episodeid": 305, "glide": "",
+        "name": "Tropical Cyclone MAWAR",
+        "htmldescription": "Red Tropical Cyclone MAWAR — landfall imminent.",
+        "alertlevel": "Red", "alertscore": 2.5,
+        "iscurrent": "true", "country": "Philippines",
+        "fromdate": "2026-07-07T04:00:00", "todate": "2026-07-09T04:00:00",
+        "datemodified": "2026-07-07T22:00:00", "iso3": "PHL", "source": "GDACS"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "type": "FeatureCollection",
+  "metadata": { "title": "USGS test fixture — run 1", "count": 4 },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "us_A",
+      "properties": {
+        "mag": 6.9, "magType": "mww", "place": "Alaska Peninsula",
+        "time": 1783389600000, "updated": 1783389660000,
+        "alert": "green", "status": "automatic", "tsunami": 0,
+        "ids": ",ak_A,us_A,", "type": "earthquake",
+        "title": "M 6.9 - Alaska Peninsula"
+      },
+      "geometry": { "type": "Point", "coordinates": [-150.0, 61.0, 20.0] }
+    },
+    {
+      "type": "Feature",
+      "id": "us_B",
+      "properties": {
+        "mag": 7.5, "magType": "mww", "place": "near Moron, Venezuela",
+        "time": 1783415520000, "updated": 1783415580000,
+        "alert": "orange", "status": "automatic", "tsunami": 1,
+        "ids": ",us_B,", "type": "earthquake",
+        "title": "M 7.5 - near Moron, Venezuela"
+      },
+      "geometry": { "type": "Point", "coordinates": [-68.2, 10.5, 12.1] }
+    },
+    {
+      "type": "Feature",
+      "id": "us_C",
+      "properties": {
+        "mag": 6.5, "magType": "mb", "place": "central Peru",
+        "time": 1783400400000, "updated": 1783400460000,
+        "alert": "orange", "status": "automatic", "tsunami": 0,
+        "ids": ",us_C,", "type": "earthquake",
+        "title": "M 6.5 - central Peru"
+      },
+      "geometry": { "type": "Point", "coordinates": [-77.0, -12.0, 30.0] }
+    },
+    {
+      "type": "Feature",
+      "id": "us_D",
+      "properties": {
+        "mag": 6.0, "magType": "mww", "place": "offshore Chile",
+        "time": 1783404000000, "updated": 1783404060000,
+        "alert": "orange", "status": "automatic", "tsunami": 0,
+        "ids": ",us_D,", "type": "earthquake",
+        "title": "M 6.0 - offshore Chile"
+      },
+      "geometry": { "type": "Point", "coordinates": [-70.0, -30.0, 25.0] }
+    }
+  ]
+}
