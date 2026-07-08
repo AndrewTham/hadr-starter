@@ -14,6 +14,8 @@ import copy
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from .util import parse_epoch
+
 # Normalized impact levels, ordered so we can detect boundary crossings.
 # GDACS has no "yellow"; its Green/Orange/Red map onto 0/2/3.
 _IMPACT_RANK = {"none": 0, "green": 0, "yellow": 1, "orange": 2, "red": 3}
@@ -143,8 +145,13 @@ class Situation:
             if ev.gdacs_score is not None:
                 self.gdacs_score = ev.gdacs_score
 
+        # Compare by parsed epoch, not raw strings: USGS stamps end in 'Z' and
+        # GDACS ones are naive, so a lexicographic compare mis-orders equal
+        # instants (and would drop genuinely-newer GDACS updates).
         ts = ev.source_updated_at or ev.observed_at
-        newer = self.last_ev_ts is None or (ts or "") >= self.last_ev_ts
+        ts_epoch = parse_epoch(ts)
+        last_epoch = parse_epoch(self.last_ev_ts)
+        newer = last_epoch is None or (ts_epoch is not None and ts_epoch >= last_epoch)
         if newer:
             for f in (
                 "mag_type",

@@ -11,6 +11,7 @@ later, "aged out of the rolling window" from "deleted".
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from typing import Dict, List
 
@@ -57,6 +58,17 @@ def connect(path: str) -> sqlite3.Connection:
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(_SCHEMA)
     conn.commit()
+
+
+def open_db(path: str) -> sqlite3.Connection:
+    """Create the parent dir, connect, and ensure the schema exists.
+
+    The one-liner both CLI entrypoints need to reach a ready-to-use connection.
+    """
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    conn = connect(path)
+    init_schema(conn)
+    return conn
 
 
 def _situation_to_row(s: Situation) -> dict:

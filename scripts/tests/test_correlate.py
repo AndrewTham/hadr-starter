@@ -79,6 +79,29 @@ class TestCorrelate(unittest.TestCase):
         self.assertEqual(m.confidence, "fuzzy")
         self.assertFalse(m.auto_merge)
 
+    def test_merged_situation_does_not_absorb_new_same_source_quake(self):
+        # A USGS+GDACS merged situation must not absorb a *distinct* USGS quake
+        # nearby — that would be the USGS<->USGS fusion the guard prevents.
+        u = usgs_eq("us_1", 10.5, -68.2, "2026-07-07T09:12:00Z")
+        g = gdacs_eq("gd_1", 10.52, -68.25, "2026-07-07T09:12:30")
+        idx = CorrelationIndex()
+        sit = new_situation_from(u, "sit-merged", u.observed_at)
+        sit.apply_evidence(g)
+        idx.add(u, sit)
+        idx.add(g, sit)  # situation now reported by both feeds
+        newq = usgs_eq("us_2", 10.9, -68.5, "2026-07-07T09:13:00Z")
+        self.assertIsNone(idx.match(newq).confidence)
+
+    def test_cross_source_large_magnitude_gap_not_merged(self):
+        # Coincident in space/time but 2 magnitudes apart -> distinct events;
+        # the magnitude gate keeps rung 3b from fusing them.
+        base = usgs_eq("us_1", 10.5, -68.2, "2026-07-07T09:12:00Z")  # M7.0
+        idx, _ = self._index_with(base)
+        g = gdacs_eq("gd_1", 10.52, -68.25, "2026-07-07T09:12:30")
+        g.magnitude = 5.0
+        m = idx.match(g)
+        self.assertEqual(m.confidence, "fuzzy")  # flagged for review, not merged
+
 
 if __name__ == "__main__":
     unittest.main()

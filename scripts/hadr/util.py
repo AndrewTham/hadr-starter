@@ -54,4 +54,11 @@ def haversine_km(
         math.sin(dphi / 2) ** 2
         + math.cos(p1) * math.cos(p2) * math.sin(dlmb / 2) ** 2
     )
-    return 2 * r * math.asin(math.sqrt(a))
+    # Clamp: float rounding can nudge `a` just above 1 for near-antipodal
+    # points, which would make math.asin raise a domain ValueError.
+    return 2 * r * math.asin(math.sqrt(min(1.0, a)))
+
+
+def now_iso() -> str:
+    """Current UTC time as an ISO8601 'Z' string (shared by the CLI entrypoints)."""
+    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

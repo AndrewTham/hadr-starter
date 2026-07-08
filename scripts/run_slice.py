@@ -15,22 +15,17 @@ rows below. QUIET rows are persisted and summarized, not surfaced.
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import os
 import sys
 
 # Allow "import hadr" when run directly as scripts/run_slice.py.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from hadr import fetch, store  # noqa: E402
+from hadr import fetch, store, util  # noqa: E402
 from hadr.pipeline import run  # noqa: E402
 
 _ICON = {"WAKE": "🔴", "FLAG": "🟡", "QUIET": "·"}
 _ORDER = {"WAKE": 0, "FLAG": 1, "QUIET": 2}
-
-
-def _now_iso() -> str:
-    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def main(argv=None) -> int:
@@ -42,24 +37,12 @@ def main(argv=None) -> int:
     p.add_argument("--observed-at", default=None, help="override observation time")
     args = p.parse_args(argv)
 
-    observed_at = args.observed_at or _now_iso()
+    observed_at = args.observed_at or util.now_iso()
 
-    raw = {}
-    if args.fetch:
-        raw["usgs"] = fetch.features(fetch.fetch_json(fetch.USGS_URL))
-        raw["gdacs"] = fetch.features(fetch.fetch_json(fetch.GDACS_URL))
-    else:
-        if not (args.usgs or args.gdacs):
-            p.error("provide --usgs/--gdacs fixtures, or --fetch for live feeds")
-        if args.usgs:
-            raw["usgs"] = fetch.features(fetch.load_json_file(args.usgs))
-        if args.gdacs:
-            raw["gdacs"] = fetch.features(fetch.load_json_file(args.gdacs))
-
-    db_dir = os.path.dirname(os.path.abspath(args.db))
-    os.makedirs(db_dir, exist_ok=True)
-    conn = store.connect(args.db)
-    store.init_schema(conn)
+    if not (args.fetch or args.usgs or args.gdacs):
+        p.error("provide --usgs/--gdacs fixtures, or --fetch for live feeds")
+    raw = fetch.load_feeds(args.usgs, args.gdacs, args.fetch)
+    conn = store.open_db(args.db)
 
     changes = run(conn, raw, observed_at)
     changes.sort(key=lambda c: (_ORDER[c.verdict], c.situation_id))

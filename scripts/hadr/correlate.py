@@ -48,8 +48,12 @@ class CorrelationIndex:
         self._exact: Dict[tuple, str] = {}  # (source, source_event_id) -> sid
         self._tokens: Dict[str, str] = {}  # identity token -> sid
         self._glide: Dict[str, str] = {}  # glide -> sid
-        # earthquakes, for the coincidence rungs: (sid, source, lat, lon, epoch)
-        self._eq: List[tuple] = []
+        # earthquakes, for the coincidence rungs, keyed by situation id:
+        # {sid: {sources:set, lat, lon, epoch, mag}}. Per-situation (not
+        # per-evidence) so the cross-source guard can see which feeds already
+        # report a situation — otherwise a merged USGS+GDACS situation exposes
+        # a 'gdacs'-tagged entry that a distinct USGS quake would wrongly match.
+        self._eq: Dict[str, dict] = {}
 
     def add(self, ev: Evidence, sit: Situation) -> None:
         sid = sit.situation_id
@@ -61,9 +65,12 @@ class CorrelationIndex:
         if ev.glide:
             self._glide[ev.glide] = sid
         if sit.hazard_type == "earthquake":
-            self._eq.append(
-                (sid, ev.source, sit.lat, sit.lon, parse_epoch(sit.onset_time))
-            )
+            entry = self._eq.setdefault(sid, {"sources": set()})
+            entry["sources"].add(ev.source)
+            entry["lat"] = sit.lat
+            entry["lon"] = sit.lon
+            entry["epoch"] = parse_epoch(sit.onset_time)
+            entry["mag"] = sit.magnitude
 
     def match(self, ev: Evidence) -> Match:
         # rung 1 -- same source, same id: this is an update to a known event.
@@ -85,31 +92,37 @@ class CorrelationIndex:
         # different sources (never USGS<->USGS, which would merge aftershocks).
         if ev.hazard_type == "earthquake":
             t = parse_epoch(ev.onset_time)
-            for sid2, src2, lat2, lon2, t2 in self._eq:
-                if src2 == ev.source:
-                    continue  # cross-source only
-                if t is None or t2 is None or abs(t - t2) > EQ_TIME_TOL_S:
+            for sid2, e in self._eq.items():
+                if ev.source in e["sources"]:
+                    continue  # this feed already reports sid2 -> not a dedup
+                if t is None or e["epoch"] is None or abs(t - e["epoch"]) > EQ_TIME_TOL_S:
                     continue
-                dist = haversine_km(ev.lat, ev.lon, lat2, lon2)
+                dist = haversine_km(ev.lat, ev.lon, e["lat"], e["lon"])
                 if dist is None or dist > EQ_DIST_TOL_KM:
                     continue
+                if (
+                    ev.magnitude is not None
+                    and e["mag"] is not None
+                    and abs(ev.magnitude - e["mag"]) > EQ_MAG_TOL
+                ):
+                    continue  # co-located but distinct magnitude -> not one quake
                 return Match(
                     sid2,
                     "cross_source",
                     "3b",
-                    f"cross-source EQ within {dist:.0f}km / {abs(t - t2):.0f}s",
+                    f"cross-source EQ within {dist:.0f}km / {abs(t - e['epoch']):.0f}s",
                 )
 
         # rung 4 -- loose same-hazard proximity. Surfaced, never auto-merged.
         # (This slice only fuzzy-matches earthquakes; other hazards fall through.)
         if ev.hazard_type == "earthquake":
             t = parse_epoch(ev.onset_time)
-            for sid2, src2, lat2, lon2, t2 in self._eq:
-                if src2 == ev.source:
+            for sid2, e in self._eq.items():
+                if ev.source in e["sources"]:
                     continue  # cross-source only
-                if t is None or t2 is None or abs(t - t2) > FUZZY_TIME_TOL_S:
+                if t is None or e["epoch"] is None or abs(t - e["epoch"]) > FUZZY_TIME_TOL_S:
                     continue
-                dist = haversine_km(ev.lat, ev.lon, lat2, lon2)
+                dist = haversine_km(ev.lat, ev.lon, e["lat"], e["lon"])
                 if dist is not None and dist <= FUZZY_DIST_TOL_KM:
                     return Match(
                         sid2,

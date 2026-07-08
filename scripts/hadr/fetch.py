@@ -29,3 +29,21 @@ def load_json_file(path: str) -> dict:
 def features(payload: dict) -> List[dict]:
     """Both feeds return a GeoJSON FeatureCollection."""
     return payload.get("features") or []
+
+
+def load_feeds(usgs_path=None, gdacs_path=None, do_fetch=False) -> dict:
+    """Assemble the {source: [features]} dict from live feeds or fixture files.
+
+    Shared by the CLI entrypoints (run_slice, sg_brief) so feed handling lives
+    in one place. Callers validate that at least one input was given.
+    """
+    raw = {}
+    if do_fetch:
+        raw["usgs"] = features(fetch_json(USGS_URL))
+        raw["gdacs"] = features(fetch_json(GDACS_URL))
+    else:
+        if usgs_path:
+            raw["usgs"] = features(load_json_file(usgs_path))
+        if gdacs_path:
+            raw["gdacs"] = features(load_json_file(gdacs_path))
+    return raw

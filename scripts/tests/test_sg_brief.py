@@ -40,7 +40,9 @@ class TestSgBriefGate(unittest.TestCase):
         self.assertIn("GATE: report", out)
         # The Philippines cyclone is the one regional item; the quakes are global.
         self.assertIn("REGIONAL", out)
-        self.assertIn("SGT", out)
+        # 00:00Z observation must render as 08:00 SGT — verifies the actual
+        # UTC->Singapore conversion, not just the literal "SGT".
+        self.assertIn("08:00 SGT", out)
 
     def test_quiet_when_nothing_changed(self):
         run_brief(self.tmp.name, 1)                   # first pass: material change

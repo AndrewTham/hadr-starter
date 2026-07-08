@@ -72,6 +72,26 @@ Deferred to later slices (need data we don't yet carry):
 - Narrative + `dashboard.html` via a `/sitrep` skill (TODO 2) — the operator
   plays that loop for now.
 
+### 2026-07-08 — Self-review of PR #3 (fixes applied)
+
+Multi-angle review of the first-slice diff before merge. Fixed:
+- `util.haversine_km` clamps the term to ≤1 — a quake near Singapore's SE-Pacific
+  antipode no longer risks a math-domain crash in the relevance distance calc.
+- `correlate` earthquake index is now per-situation with a sources set + a
+  magnitude gate: a merged USGS+GDACS situation can't absorb a distinct
+  same-feed quake, and co-located quakes >0.5 M apart aren't fused.
+- `models.apply_evidence` compares timestamps by parsed epoch, not raw strings
+  (USGS 'Z' vs GDACS naive no longer mis-order "newest wins").
+- GDACS `evidence_id` includes `datemodified` so a same-episode update stays
+  append-only instead of REPLACE-ing the prior row.
+- Extracted shared CLI helpers (`fetch.load_feeds`, `store.open_db`,
+  `util.now_iso`) — `run_slice` and `sg_brief` no longer duplicate feed/db setup.
+- Strengthened the SGT test to assert the real 08:00 conversion. 37 tests pass.
+
+Deferred: retraction of a *previously-reported-then-decayed* event stays silent
+because it keys on the unwired `report_log` / `last_reported_at` (see Deviations);
+resolved when report_log lands.
+
 ## Open questions
 
 - Fuzzy-correlation thresholds (~100 km / ~1 h) are guesses — tune against real

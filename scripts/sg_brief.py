@@ -25,7 +25,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from hadr import fetch, store  # noqa: E402
+from hadr import fetch, store, util  # noqa: E402
 from hadr.pipeline import run  # noqa: E402
 from hadr.relevance import rank_for_singapore, sg_reasons, sg_tier  # noqa: E402
 
@@ -39,10 +39,6 @@ TIER_BLURB = {
     "REGIONAL": "within the SE-Asia operating region",
     "GLOBAL": "elsewhere — significant enough to note",
 }
-
-
-def _now_iso() -> str:
-    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _sgt(observed_at: str) -> dt.datetime:
@@ -93,23 +89,12 @@ def main(argv=None) -> int:
     p.add_argument("--observed-at", default=None)
     args = p.parse_args(argv)
 
-    observed_at = args.observed_at or _now_iso()
+    observed_at = args.observed_at or util.now_iso()
 
-    raw = {}
-    if args.fetch:
-        raw["usgs"] = fetch.features(fetch.fetch_json(fetch.USGS_URL))
-        raw["gdacs"] = fetch.features(fetch.fetch_json(fetch.GDACS_URL))
-    else:
-        if not (args.usgs or args.gdacs):
-            p.error("provide --usgs/--gdacs fixtures, or --fetch for live feeds")
-        if args.usgs:
-            raw["usgs"] = fetch.features(fetch.load_json_file(args.usgs))
-        if args.gdacs:
-            raw["gdacs"] = fetch.features(fetch.load_json_file(args.gdacs))
-
-    os.makedirs(os.path.dirname(os.path.abspath(args.db)), exist_ok=True)
-    conn = store.connect(args.db)
-    store.init_schema(conn)
+    if not (args.fetch or args.usgs or args.gdacs):
+        p.error("provide --usgs/--gdacs fixtures, or --fetch for live feeds")
+    raw = fetch.load_feeds(args.usgs, args.gdacs, args.fetch)
+    conn = store.open_db(args.db)
 
     changes = run(conn, raw, observed_at)
     wake = {c.situation_id: c for c in changes if c.verdict == "WAKE"}

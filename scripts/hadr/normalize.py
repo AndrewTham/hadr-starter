@@ -75,7 +75,9 @@ def gdacs_feature_to_evidence(feature: dict, observed_at: str) -> Evidence:
         if v:
             external.append(str(v))
     return Evidence(
-        evidence_id=f"ev-gdacs-{eid}-{episode}",
+        # Include datemodified so a same-episode update is a distinct row and
+        # doesn't REPLACE the prior observation (evidence is append-only).
+        evidence_id=f"ev-gdacs-{eid}-{episode}-{props.get('datemodified')}",
         source="gdacs",
         source_event_id=eid,
         source_episode_id=str(episode) if episode is not None else None,
